@@ -447,21 +447,21 @@ function renderGallery() {
     var grid = document.getElementById('gallery-grid');
     if (!grid) return;
     if (currentData.photos.length === 0) {
-        grid.innerHTML = '<div class="empty-state"><i class="fas fa-images"></i><p>还没有照片，快去上传吧 📸</p></div>';
+        grid.innerHTML = '<div class="empty-state">🖼️<p>还没有照片，快去上传吧 📸</p></div>';
         return;
     }
     var html = '';
     [].forEach.call(currentData.photos, function (p) {
-        var uploadTime = p.uploadTime ? '<div class="photo-meta-item"><i class="fas fa-cloud-upload-alt"></i> 上传于 ' + formatDateTime(p.uploadTime) + '</div>' : '';
+        var uploadTime = p.uploadTime ? '<div class="photo-meta-item">☁️ 上传于 ' + formatDateTime(p.uploadTime) + '</div>' : '';
         var photoDate = p.photoDate
-            ? '<div class="photo-meta-item photo-date-item" onclick="editPhotoDate(' + p.id + ')"><i class="fas fa-camera"></i> 拍摄于 ' + p.photoDate + '</div>'
-            : '<div class="photo-meta-item photo-date-item photo-date-empty" onclick="editPhotoDate(' + p.id + ')"><i class="fas fa-camera"></i> 点击添加拍摄日期</div>';
+            ? '<div class="photo-meta-item photo-date-item" onclick="editPhotoDate(' + p.id + ')">📷 拍摄于 ' + p.photoDate + '</div>'
+            : '<div class="photo-meta-item photo-date-item photo-date-empty" onclick="editPhotoDate(' + p.id + ')">📷 点击添加拍摄日期</div>';
         var descHtml = p.desc
             ? '<p class="photo-desc-text" onclick="editPhotoDesc(' + p.id + ')">' + p.desc.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>'
             : '<p class="photo-desc-text photo-desc-empty" onclick="editPhotoDesc(' + p.id + ')">点击添加配文...</p>';
 
         html += '<div class="photo-card">' +
-            '<button class="photo-delete-btn" onclick="deletePhoto(' + p.id + ')" title="删除"><i class="fas fa-trash"></i></button>' +
+            '<button class="photo-delete-btn" onclick="deletePhoto(' + p.id + ')" title="删除">🗑️</button>' +
             '<img src="' + p.url + '" alt="" class="photo-image" loading="lazy">' +
             '<div class="photo-info">' +
                 descHtml +
@@ -562,7 +562,7 @@ function renderBucketList() {
     var list = document.getElementById('bucket-list');
     if (!list) return;
     if (total === 0) {
-        list.innerHTML = '<div class="empty-state"><i class="fas fa-list-check"></i><p>还没有愿望，快去添加吧 ✨</p></div>';
+        list.innerHTML = '<div class="empty-state">📋<p>还没有愿望，快去添加吧 ✨</p></div>';
         return;
     }
     var html = '';
@@ -571,8 +571,8 @@ function renderBucketList() {
             '<div class="bucket-checkbox ' + (item.completed ? 'checked' : '') + '" onclick="toggleBucket(' + item.id + ')"></div>' +
             '<span class="bucket-text ' + (item.completed ? 'completed' : '') + '">' + item.text.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</span>' +
             '<div class="bucket-actions">' +
-                '<button class="bucket-action-btn bucket-edit-btn" onclick="editBucket(' + item.id + ')"><i class="fas fa-edit"></i></button>' +
-                '<button class="bucket-action-btn bucket-delete-btn" onclick="deleteBucket(' + item.id + ')"><i class="fas fa-trash"></i></button>' +
+                '<button class="bucket-action-btn bucket-edit-btn" onclick="editBucket(' + item.id + ')">✏️</button>' +
+                '<button class="bucket-action-btn bucket-delete-btn" onclick="deleteBucket(' + item.id + ')">🗑️</button>' +
             '</div>' +
         '</li>';
     });
@@ -630,7 +630,7 @@ function renderTimeline() {
     var container = document.getElementById('timeline-container');
     if (!container) return;
     if (currentData.timeline.length === 0) {
-        container.innerHTML = '<div class="empty-state"><i class="fas fa-history"></i><p>还没有记录，快去添加吧 💕</p></div>';
+        container.innerHTML = '<div class="empty-state">⏰<p>还没有记录，快去添加吧 💕</p></div>';
         return;
     }
 
@@ -647,8 +647,8 @@ function renderTimeline() {
                 '<div class="timeline-title">' + item.title.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>' +
                 '<div class="timeline-desc">' + (item.desc || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>' +
                 '<div class="timeline-actions">' +
-                    '<button class="timeline-action-btn timeline-edit-btn" onclick="editTimelineEvent(' + item.id + ')"><i class="fas fa-edit"></i> 编辑</button>' +
-                    '<button class="timeline-action-btn timeline-delete-btn" onclick="deleteTimelineEvent(' + item.id + ')"><i class="fas fa-trash"></i> 删除</button>' +
+                    '<button class="timeline-action-btn timeline-edit-btn" onclick="editTimelineEvent(' + item.id + ')">✏️ 编辑</button>' +
+                    '<button class="timeline-action-btn timeline-delete-btn" onclick="deleteTimelineEvent(' + item.id + ')">🗑️ 删除</button>' +
                 '</div>' +
             '</div>' +
         '</div>';
@@ -752,7 +752,7 @@ function renderMap() {
             '<span class="visited-name">' + item.name + '</span>' +
             '<div class="visited-item-right">' +
                 '<span class="visited-date">' + formatDate(item.date) + '</span>' +
-                '<button class="delete-province-btn" onclick="removeProvince(\'' + item.name + '\')"><i class="fas fa-trash"></i></button>' +
+                '<button class="delete-province-btn" onclick="removeProvince(\'' + item.name + '\')">🗑️</button>' +
             '</div>' +
         '</li>';
     });
