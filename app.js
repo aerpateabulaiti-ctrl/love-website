@@ -1,5 +1,76 @@
-var PASSWORD = '09140707';
+var PASSWORD_HASH = '60571ebc41f8568fe4cab5c90c8ef8992d278e9abaadb8743a6a509d88f94d03';
+
+async function sha256(str) {
+    var buf = new TextEncoder().encode(str);
+    var hash = await crypto.subtle.digest('SHA-256', buf);
+    var arr = Array.from(new Uint8Array(hash));
+    return arr.map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+}
 var ANNIVERSARY = new Date('2026-05-20T00:00:00');
+
+var SB_URL = 'https://okpcwsianqkouitdwhvx.supabase.co/rest/v1';
+var SB_KEY = 'sb_publishable_vbFikpq9UwVas__oLTWWaQ_Qx4I3Nsz';
+
+function sbHeaders() {
+    return {
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + SB_KEY,
+        'Content-Type': 'application/json'
+    };
+}
+
+async function sbGet(table, query) {
+    var qs = '';
+    if (typeof query === 'string') {
+        qs = '?' + query;
+    } else if (query) {
+        qs = '?' + Object.keys(query).map(function (k) {
+            return encodeURIComponent(k) + '=' + encodeURIComponent(query[k]);
+        }).join('&');
+    }
+    try {
+        var res = await fetch(SB_URL + '/' + table + qs, { method: 'GET', headers: sbHeaders() });
+        if (!res.ok) { var e = await res.text(); console.error('GET ' + table + ': ' + e); return []; }
+        return res.json();
+    } catch (err) { console.error('GET ' + table + ': ' + err.message); return []; }
+}
+
+async function sbInsert(table, data) {
+    try {
+        var res = await fetch(SB_URL + '/' + table, {
+            method: 'POST',
+            headers: Object.assign({ 'Prefer': 'return=representation' }, sbHeaders()),
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) { var e = await res.text(); console.error('INSERT ' + table + ': ' + e); return null; }
+        return res.json();
+    } catch (err) { console.error('INSERT ' + table + ': ' + err.message); return null; }
+}
+
+async function sbUpdate(table, filterCol, filterVal, data) {
+    try {
+        var qs = encodeURIComponent(filterCol) + '=eq.' + encodeURIComponent(filterVal);
+        var res = await fetch(SB_URL + '/' + table + '?' + qs, {
+            method: 'PATCH',
+            headers: Object.assign({ 'Prefer': 'return=representation' }, sbHeaders()),
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) { var e = await res.text(); console.error('UPDATE ' + table + ': ' + e); return false; }
+        return true;
+    } catch (err) { console.error('UPDATE ' + table + ': ' + err.message); return false; }
+}
+
+async function sbDelete(table, filterCol, filterVal) {
+    try {
+        var qs = encodeURIComponent(filterCol) + '=eq.' + encodeURIComponent(filterVal);
+        var res = await fetch(SB_URL + '/' + table + '?' + qs, {
+            method: 'DELETE',
+            headers: sbHeaders()
+        });
+        if (!res.ok) { var e = await res.text(); console.error('DELETE ' + table + ': ' + e); return false; }
+        return true;
+    } catch (err) { console.error('DELETE ' + table + ': ' + err.message); return false; }
+}
 
 var PROVINCES = [
     { name: '北京', region: '华北' }, { name: '天津', region: '华北' },
@@ -22,62 +93,98 @@ var PROVINCES = [
 ];
 
 var initData = {
-    photos: [],
     bucketList: [
-        { id: 1, text: '一起去看一次日出', completed: true },
-        { id: 2, text: '一起去海边看星星', completed: false },
-        { id: 3, text: '一起学做一道菜', completed: false },
-        { id: 4, text: '一起去旅行一次', completed: false },
-        { id: 5, text: '一起养一盆小植物', completed: false }
+        { text: '一起去看一次日出', completed: true },
+        { text: '一起去海边看星星', completed: false },
+        { text: '一起学做一道菜', completed: false },
+        { text: '一起去旅行一次', completed: false },
+        { text: '一起养一盆小植物', completed: false }
     ],
     timeline: [
-        { id: 1, title: '第一次相遇', desc: '在朋友聚会上，我们第一次见面', date: '2026-03-15', time: '19:00' },
-        { id: 2, title: '确定关系', desc: '向彼此表白了，我们正式在一起了', date: '2026-04-10', time: '20:30' }
-    ],
+        { title: '第一次相遇', description: '在朋友聚会上，我们第一次见面', date: '2026-03-15', time: '19:00' },
+        { title: '确定关系', description: '向彼此表白了，我们正式在一起了', date: '2026-04-10', time: '20:30' }
+    ]
+};
+
+var currentData = {
+    photos: [],
+    bucketList: [],
+    timeline: [],
     visitedProvinces: []
 };
 
-function loadData() {
+// Supabase snake_case → JS camelCase
+function mapPhoto(p) {
+    return { id: p.id, url: p.url, desc: p.description || '', uploadTime: p.upload_time, photoDate: p.photo_date || '' };
+}
+function mapBucket(b) {
+    return { id: b.id, text: b.text, completed: b.completed };
+}
+function mapTimeline(t) {
+    return { id: t.id, title: t.title, desc: t.description || '', date: t.date, time: t.time || '12:00' };
+}
+function mapProvince(v) {
+    return { id: v.id, name: v.name, date: v.date };
+}
+
+async function loadData() {
     try {
-        var saved = localStorage.getItem('coupleData');
-        if (saved) {
-            var parsed = JSON.parse(saved);
-            if (parsed && typeof parsed === 'object') return parsed;
+        var photosData = await sbGet('photos', 'select=*&order=id.desc');
+        currentData.photos = (photosData || []).map(mapPhoto);
+    } catch (e) { console.error('加载照片失败:', e); }
+
+    try {
+        var bucketData = await sbGet('bucket_list', 'select=*&order=id.asc');
+        currentData.bucketList = (bucketData || []).map(mapBucket);
+    } catch (e) { console.error('加载愿望清单失败:', e); }
+
+    try {
+        var timelineData = await sbGet('timeline', 'select=*&order=date.desc');
+        currentData.timeline = (timelineData || []).map(mapTimeline);
+    } catch (e) { console.error('加载时间轴失败:', e); }
+
+    try {
+        var provincesData = await sbGet('visited_provinces', 'select=*&order=id.asc');
+        currentData.visitedProvinces = (provincesData || []).map(mapProvince);
+    } catch (e) { console.error('加载足迹失败:', e); }
+}
+
+// 首次使用填充默认数据
+async function seedIfEmpty() {
+    try {
+        if (currentData.bucketList.length === 0 && initData.bucketList.length > 0) {
+            var items = initData.bucketList.map(function (b) {
+                return { text: b.text, completed: b.completed };
+            });
+            var res = await sbInsert('bucket_list', items);
+            if (res) { currentData.bucketList = res.map(mapBucket); }
         }
     } catch (e) {}
-    localStorage.setItem('coupleData', JSON.stringify(initData));
-    return JSON.parse(JSON.stringify(initData));
-}
 
-function saveData(data) {
     try {
-        localStorage.setItem('coupleData', JSON.stringify(data));
-    } catch (e) {
-        showAlert('⚠️ 存储空间不足！\n请删除一些照片后重试。\n当前已用空间较大，建议清理旧照片。');
-    }
-    updateStorageInfo();
-}
-
-function getStorageUsed() {
-    var total = 0;
-    for (var key in localStorage) {
-        if (localStorage.hasOwnProperty(key)) {
-            total += localStorage[key].length + key.length;
+        if (currentData.timeline.length === 0 && initData.timeline.length > 0) {
+            var items = initData.timeline.map(function (t) {
+                return { title: t.title, description: t.description, date: t.date, time: t.time };
+            });
+            var res = await sbInsert('timeline', items);
+            if (res) { currentData.timeline = res.map(mapTimeline); }
         }
-    }
-    return total;
+    } catch (e) {}
 }
 
-function updateStorageInfo() {
-    var el = document.getElementById('storage-info');
-    if (!el) return;
-    var used = getStorageUsed();
-    var kb = Math.round(used / 1024);
-    var limit = 5120; // 5MB in KB
-    var pct = Math.round((used / (limit * 1024)) * 100);
-    el.textContent = '存储: ' + kb + 'KB / 5MB (' + pct + '%)';
-    el.style.color = pct > 80 ? '#E53935' : pct > 50 ? '#E57373' : '#A09086';
+function showAlert(msg) {
+    var el = document.getElementById('confirm-msg');
+    var dlg = document.getElementById('confirm-dialog');
+    if (!el || !dlg) { alert(msg); return; }
+    el.textContent = msg;
+    dlg.classList.remove('hidden');
+    var cancelBtn = document.getElementById('confirm-cancel');
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    dialogCallback = function () { hideConfirm(true); };
 }
+
+var STORAGE_URL = 'https://okpcwsianqkouitdwhvx.supabase.co/storage/v1/object/photos/';
+var STORAGE_PUBLIC_URL = 'https://okpcwsianqkouitdwhvx.supabase.co/storage/v1/object/public/photos/';
 
 function compressImage(file, callback) {
     var reader = new FileReader();
@@ -98,14 +205,60 @@ function compressImage(file, callback) {
             canvas.height = h;
             var ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, w, h);
-            callback(canvas.toDataURL('image/jpeg', 0.75));
+            canvas.toBlob(function (blob) {
+                callback(blob);
+            }, 'image/jpeg', 0.75);
         };
         img.src = e.target.result;
     };
     reader.readAsDataURL(file);
 }
 
-var currentData = loadData();
+function extractStoragePath(url) {
+    if (!url || url.indexOf(STORAGE_PUBLIC_URL) !== 0) return null;
+    return url.substring(STORAGE_PUBLIC_URL.length);
+}
+
+async function uploadPhotoToStorage(blob) {
+    var filename = Date.now() + '-' + Math.random().toString(36).substr(2, 9) + '.jpg';
+    try {
+        var res = await fetch(STORAGE_URL + filename, {
+            method: 'POST',
+            headers: {
+                'apikey': SB_KEY,
+                'Authorization': 'Bearer ' + SB_KEY,
+                'Content-Type': 'image/jpeg',
+                'Cache-Control': 'max-age=3600'
+            },
+            body: blob
+        });
+        if (!res.ok) {
+            var errText = await res.text();
+            console.error('Storage upload failed:', errText);
+            return null;
+        }
+        return STORAGE_PUBLIC_URL + filename;
+    } catch (err) {
+        console.error('Storage upload error:', err.message);
+        return null;
+    }
+}
+
+async function deletePhotoFromStorage(url) {
+    var path = extractStoragePath(url);
+    if (!path) return;
+    try {
+        await fetch(STORAGE_URL + path, {
+            method: 'DELETE',
+            headers: {
+                'apikey': SB_KEY,
+                'Authorization': 'Bearer ' + SB_KEY
+            }
+        });
+    } catch (err) {
+        console.error('Storage delete error:', err.message);
+    }
+}
 
 /* ========== 自定义弹窗 ========== */
 var dialogCallback = null;
@@ -150,7 +303,6 @@ function showDialog(title, fields, callback) {
             if (first) first.focus();
         }, 150);
     } catch (e) {
-        // fallback to prompt
         var vals = {};
         [].forEach.call(fields, function (f) {
             vals[f.name] = prompt(f.placeholder || f.name);
@@ -184,7 +336,6 @@ function showConfirm(msg, callback) {
     if (!el || !dlg) { if (callback) callback(confirm(msg)); return; }
     el.textContent = msg;
     dlg.classList.remove('hidden');
-    // 显示取消按钮（可能之前被 alert 模式隐藏了）
     var cancelBtn = document.getElementById('confirm-cancel');
     if (cancelBtn) cancelBtn.style.display = '';
     dialogCallback = callback;
@@ -203,8 +354,9 @@ function auth() {
     var pwd = document.getElementById('password-input');
     var btn = document.getElementById('auth-btn');
     if (!pwd || !btn) return;
-    btn.addEventListener('click', function () {
-        if (pwd.value === PASSWORD) {
+    btn.addEventListener('click', async function () {
+        var hash = await sha256(pwd.value);
+        if (hash === PASSWORD_HASH) {
             var as = document.getElementById('auth-screen');
             var mc = document.getElementById('main-content');
             if (as) as.classList.add('hidden');
@@ -302,7 +454,7 @@ function renderGallery() {
             ? '<div class="photo-meta-item photo-date-item" onclick="editPhotoDate(' + p.id + ')"><i class="fas fa-camera"></i> 拍摄于 ' + p.photoDate + '</div>'
             : '<div class="photo-meta-item photo-date-item photo-date-empty" onclick="editPhotoDate(' + p.id + ')"><i class="fas fa-camera"></i> 点击添加拍摄日期</div>';
         var descHtml = p.desc
-            ? '<p class="photo-desc-text" onclick="editPhotoDesc(' + p.id + ')">' + p.desc + '</p>'
+            ? '<p class="photo-desc-text" onclick="editPhotoDesc(' + p.id + ')">' + p.desc.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>'
             : '<p class="photo-desc-text photo-desc-empty" onclick="editPhotoDesc(' + p.id + ')">点击添加配文...</p>';
 
         html += '<div class="photo-card">' +
@@ -317,36 +469,40 @@ function renderGallery() {
     grid.innerHTML = html;
 }
 
-function deletePhoto(id) {
-    showConfirm('确定删除这张照片吗？', function (ok) {
+async function deletePhoto(id) {
+    showConfirm('确定删除这张照片吗？', async function (ok) {
         if (ok) {
+            var photo = currentData.photos.find(function (p) { return p.id === id; });
+            if (photo) await deletePhotoFromStorage(photo.url);
+            await sbDelete('photos', 'id', id);
             currentData.photos = currentData.photos.filter(function (p) { return p.id !== id; });
-            saveData(currentData);
             renderGallery();
         }
     });
 }
 
-function editPhotoDesc(id) {
+async function editPhotoDesc(id) {
     var photo = currentData.photos.find(function (p) { return p.id === id; });
     if (!photo) return;
     showDialog('编辑配文', [
         { name: 'desc', type: 'textarea', placeholder: '为这张照片配一段文字...', value: photo.desc || '' }
-    ], function (r) {
-        photo.desc = (r.desc || '').trim();
-        saveData(currentData);
+    ], async function (r) {
+        var desc = (r.desc || '').trim();
+        await sbUpdate('photos', 'id', id, { description: desc });
+        photo.desc = desc;
         renderGallery();
     });
 }
 
-function editPhotoDate(id) {
+async function editPhotoDate(id) {
     var photo = currentData.photos.find(function (p) { return p.id === id; });
     if (!photo) return;
     showDialog('拍摄日期', [
         { name: 'date', type: 'date', placeholder: '选择拍摄日期', value: photo.photoDate || todayStr() }
-    ], function (r) {
-        photo.photoDate = r.date || '';
-        saveData(currentData);
+    ], async function (r) {
+        var date = r.date || '';
+        await sbUpdate('photos', 'id', id, { photo_date: date });
+        photo.photoDate = date;
         renderGallery();
     });
 }
@@ -357,19 +513,32 @@ function setupPhotoUpload() {
     fileInput.addEventListener('change', function (e) {
         var file = e.target.files[0];
         if (!file) return;
-        compressImage(file, function (url) {
-            showDialog('照片上传成功 💕', [
+        console.log('[上传] 开始处理图片:', file.name, '大小:', (file.size / 1024).toFixed(1) + 'KB');
+        compressImage(file, async function (blob) {
+            if (!blob) { console.error('[上传] 图片压缩失败'); showAlert('图片处理失败，请重试'); return; }
+            console.log('[上传] 压缩完成, Blob大小:', (blob.size / 1024).toFixed(1) + 'KB');
+            console.log('[上传] 正在上传到Supabase Storage...');
+            var publicUrl = await uploadPhotoToStorage(blob);
+            if (!publicUrl) { console.error('[上传] Storage上传失败'); showAlert('图片上传失败，请检查网络后重试'); return; }
+            console.log('[上传] Storage上传成功, URL:', publicUrl);
+            showDialog('为照片添加信息', [
                 { name: 'desc', type: 'textarea', placeholder: '为这张照片配一段文字...' },
                 { name: 'photoDate', type: 'date', placeholder: '拍摄日期', value: todayStr() }
-            ], function (r) {
-                currentData.photos.unshift({
-                    id: Date.now(),
-                    url: url,
-                    desc: (r.desc || '').trim(),
-                    uploadTime: new Date().toISOString(),
-                    photoDate: r.photoDate || ''
+            ], async function (r) {
+                console.log('[上传] 正在写入数据库...');
+                var res = await sbInsert('photos', {
+                    url: publicUrl,
+                    description: (r.desc || '').trim(),
+                    upload_time: new Date().toISOString(),
+                    photo_date: r.photoDate || ''
                 });
-                saveData(currentData);
+                console.log('[上传] 数据库写入结果:', res);
+                if (res && res.length > 0) {
+                    currentData.photos.unshift(mapPhoto(res[0]));
+                    console.log('[上传] ✅ 照片已成功保存到数据库!');
+                } else {
+                    console.error('[上传] ❌ 数据库写入失败! res为:', res);
+                }
                 renderGallery();
             });
         });
@@ -398,7 +567,7 @@ function renderBucketList() {
     [].forEach.call(currentData.bucketList, function (item) {
         html += '<li class="bucket-item">' +
             '<div class="bucket-checkbox ' + (item.completed ? 'checked' : '') + '" onclick="toggleBucket(' + item.id + ')"></div>' +
-            '<span class="bucket-text ' + (item.completed ? 'completed' : '') + '">' + item.text + '</span>' +
+            '<span class="bucket-text ' + (item.completed ? 'completed' : '') + '">' + item.text.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</span>' +
             '<div class="bucket-actions">' +
                 '<button class="bucket-action-btn bucket-edit-btn" onclick="editBucket(' + item.id + ')"><i class="fas fa-edit"></i></button>' +
                 '<button class="bucket-action-btn bucket-delete-btn" onclick="deleteBucket(' + item.id + ')"><i class="fas fa-trash"></i></button>' +
@@ -408,44 +577,49 @@ function renderBucketList() {
     list.innerHTML = html;
 }
 
-function toggleBucket(id) {
+async function toggleBucket(id) {
     var item = currentData.bucketList.find(function (i) { return i.id === id; });
-    if (item) { item.completed = !item.completed; saveData(currentData); renderBucketList(); }
+    if (!item) return;
+    var newVal = !item.completed;
+    await sbUpdate('bucket_list', 'id', id, { completed: newVal });
+    item.completed = newVal;
+    renderBucketList();
 }
 
-function editBucket(id) {
+async function editBucket(id) {
     var item = currentData.bucketList.find(function (i) { return i.id === id; });
     if (!item) return;
     showDialog('编辑愿望', [
         { name: 'text', placeholder: '愿望内容', value: item.text }
-    ], function (r) {
-        if (r.text && r.text.trim()) {
-            item.text = r.text.trim();
-            saveData(currentData);
-            renderBucketList();
-        }
+    ], async function (r) {
+        if (!r.text || !r.text.trim()) return;
+        var text = r.text.trim();
+        await sbUpdate('bucket_list', 'id', id, { text: text });
+        item.text = text;
+        renderBucketList();
     });
 }
 
-function deleteBucket(id) {
-    showConfirm('确定删除这个愿望吗？', function (ok) {
+async function deleteBucket(id) {
+    showConfirm('确定删除这个愿望吗？', async function (ok) {
         if (ok) {
+            await sbDelete('bucket_list', 'id', id);
             currentData.bucketList = currentData.bucketList.filter(function (i) { return i.id !== id; });
-            saveData(currentData);
             renderBucketList();
         }
     });
 }
 
-function addBucket() {
+async function addBucket() {
     showDialog('添加新愿望', [
         { name: 'text', placeholder: '输入你的愿望...' }
-    ], function (r) {
-        if (r.text && r.text.trim()) {
-            currentData.bucketList.push({ id: Date.now(), text: r.text.trim(), completed: false });
-            saveData(currentData);
-            renderBucketList();
+    ], async function (r) {
+        if (!r.text || !r.text.trim()) return;
+        var res = await sbInsert('bucket_list', { text: r.text.trim(), completed: false });
+        if (res && res.length > 0) {
+            currentData.bucketList.push(mapBucket(res[0]));
         }
+        renderBucketList();
     });
 }
 
@@ -468,8 +642,8 @@ function renderTimeline() {
             '<div class="timeline-dot"></div>' +
             '<div class="timeline-content">' +
                 '<div class="timeline-date">' + formatDate(item.date) + ' ' + (item.time || '') + '</div>' +
-                '<div class="timeline-title">' + item.title + '</div>' +
-                '<div class="timeline-desc">' + (item.desc || '') + '</div>' +
+                '<div class="timeline-title">' + item.title.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>' +
+                '<div class="timeline-desc">' + (item.desc || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>' +
                 '<div class="timeline-actions">' +
                     '<button class="timeline-action-btn timeline-edit-btn" onclick="editTimelineEvent(' + item.id + ')"><i class="fas fa-edit"></i> 编辑</button>' +
                     '<button class="timeline-action-btn timeline-delete-btn" onclick="deleteTimelineEvent(' + item.id + ')"><i class="fas fa-trash"></i> 删除</button>' +
@@ -480,28 +654,29 @@ function renderTimeline() {
     container.innerHTML = html;
 }
 
-function addTimelineEvent() {
+async function addTimelineEvent() {
     var today = todayStr();
     showDialog('添加恋爱事件', [
         { name: 'title', placeholder: '事件标题' },
         { name: 'desc', type: 'textarea', placeholder: '事件描述' },
         { name: 'date', type: 'date', value: today },
         { name: 'time', type: 'time', value: '12:00' }
-    ], function (r) {
+    ], async function (r) {
         if (!r.title || !r.title.trim()) return;
-        currentData.timeline.push({
-            id: Date.now(),
+        var res = await sbInsert('timeline', {
             title: r.title.trim(),
-            desc: (r.desc || '').trim() || '暂无描述',
+            description: (r.desc || '').trim() || '暂无描述',
             date: r.date || today,
             time: r.time || '12:00'
         });
-        saveData(currentData);
+        if (res && res.length > 0) {
+            currentData.timeline.push(mapTimeline(res[0]));
+        }
         renderTimeline();
     });
 }
 
-function editTimelineEvent(id) {
+async function editTimelineEvent(id) {
     var item = currentData.timeline.find(function (i) { return i.id === id; });
     if (!item) return;
     showDialog('编辑恋爱事件', [
@@ -509,22 +684,28 @@ function editTimelineEvent(id) {
         { name: 'desc', type: 'textarea', placeholder: '事件描述', value: item.desc || '' },
         { name: 'date', type: 'date', value: item.date },
         { name: 'time', type: 'time', value: item.time || '12:00' }
-    ], function (r) {
+    ], async function (r) {
         if (!r.title || !r.title.trim()) return;
-        item.title = r.title.trim();
-        item.desc = (r.desc || '').trim() || '暂无描述';
-        item.date = r.date || item.date;
-        item.time = r.time || '12:00';
-        saveData(currentData);
+        var updates = {
+            title: r.title.trim(),
+            description: (r.desc || '').trim() || '暂无描述',
+            date: r.date || item.date,
+            time: r.time || '12:00'
+        };
+        await sbUpdate('timeline', 'id', id, updates);
+        item.title = updates.title;
+        item.desc = updates.description;
+        item.date = updates.date;
+        item.time = updates.time;
         renderTimeline();
     });
 }
 
-function deleteTimelineEvent(id) {
-    showConfirm('确定删除这个事件吗？', function (ok) {
+async function deleteTimelineEvent(id) {
+    showConfirm('确定删除这个事件吗？', async function (ok) {
         if (ok) {
+            await sbDelete('timeline', 'id', id);
             currentData.timeline = currentData.timeline.filter(function (i) { return i.id !== id; });
-            saveData(currentData);
             renderTimeline();
         }
     });
@@ -536,7 +717,6 @@ function renderMap() {
     el = document.getElementById('map-count');
     if (el) el.textContent = currentData.visitedProvinces.length;
 
-    // 更新地图格子
     var cells = document.querySelectorAll('.grid-cell');
     [].forEach.call(cells, function (cell) {
         if (cell.classList.contains('empty')) return;
@@ -547,7 +727,6 @@ function renderMap() {
         cell.classList.toggle('visited', hasVisited);
     });
 
-    // 省份标签
     var pg = document.getElementById('province-grid');
     if (pg) {
         var pgHtml = '';
@@ -558,7 +737,6 @@ function renderMap() {
         pg.innerHTML = pgHtml;
     }
 
-    // 已访问列表
     var vl = document.getElementById('visited-provinces');
     if (!vl) return;
     if (currentData.visitedProvinces.length === 0) {
@@ -579,24 +757,30 @@ function renderMap() {
     vl.innerHTML = vlHtml;
 }
 
-function markProvince(name) {
+async function markProvince(name) {
     var existing = currentData.visitedProvinces.find(function (p) { return p.name === name; });
     showDialog(existing ? '编辑「' + name + '」' : '点亮「' + name + '」', [
         { name: 'date', type: 'date', value: existing ? existing.date : todayStr() }
-    ], function (r) {
+    ], async function (r) {
         if (!r.date) return;
-        if (existing) { existing.date = r.date; }
-        else { currentData.visitedProvinces.push({ name: name, date: r.date }); }
-        saveData(currentData);
+        if (existing) {
+            await sbUpdate('visited_provinces', 'name', name, { date: r.date });
+            existing.date = r.date;
+        } else {
+            var res = await sbInsert('visited_provinces', { name: name, date: r.date });
+            if (res && res.length > 0) {
+                currentData.visitedProvinces.push(mapProvince(res[0]));
+            }
+        }
         renderMap();
     });
 }
 
-function removeProvince(name) {
-    showConfirm('确定删除「' + name + '」的足迹吗？', function (ok) {
+async function removeProvince(name) {
+    showConfirm('确定删除「' + name + '」的足迹吗？', async function (ok) {
         if (ok) {
+            await sbDelete('visited_provinces', 'name', name);
             currentData.visitedProvinces = currentData.visitedProvinces.filter(function (p) { return p.name !== name; });
-            saveData(currentData);
             renderMap();
         }
     });
@@ -604,7 +788,6 @@ function removeProvince(name) {
 
 /* ========== 弹窗事件绑定 ========== */
 function setupDialogs() {
-    // 自定义弹窗
     var dlgOk = document.getElementById('dialog-ok');
     var dlgCancel = document.getElementById('dialog-cancel');
     var dlgClose = document.getElementById('dialog-close');
@@ -619,7 +802,6 @@ function setupDialogs() {
         });
     }
 
-    // 确认弹窗
     var cfmOk = document.getElementById('confirm-ok');
     var cfmCancel = document.getElementById('confirm-cancel');
     var cfmClose = document.getElementById('confirm-close');
@@ -634,7 +816,6 @@ function setupDialogs() {
         });
     }
 
-    // 键盘事件
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') {
             if (customDlg && !customDlg.classList.contains('hidden')) hideDialog();
@@ -644,27 +825,21 @@ function setupDialogs() {
 }
 
 /* ========== 初始化 ========== */
-function initApp() {
+async function initApp() {
     updateGreeting();
     updateTimer();
     setInterval(updateTimer, 1000);
-
     setupDialogs();
     initTabs();
-    updateStorageInfo();
-    renderGallery();
     setupPhotoUpload();
+
+    await loadData();
+    await seedIfEmpty();
+
+    renderGallery();
     renderBucketList();
     renderTimeline();
     renderMap();
-
-    // 备用：JS 绑定（HTML onclick 已作为主方案）
-    try {
-        var b1 = document.getElementById('add-bucket-btn');
-        var b2 = document.getElementById('add-event-btn');
-        if (b1) b1.addEventListener('click', addBucket);
-        if (b2) b2.addEventListener('click', addTimelineEvent);
-    } catch (e) {}
 }
 
 document.addEventListener('DOMContentLoaded', function () { auth(); });
