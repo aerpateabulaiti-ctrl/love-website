@@ -186,32 +186,35 @@ function showAlert(msg) {
 var STORAGE_URL = 'https://okpcwsianqkouitdwhvx.supabase.co/storage/v1/object/photos/';
 var STORAGE_PUBLIC_URL = 'https://okpcwsianqkouitdwhvx.supabase.co/storage/v1/object/public/photos/';
 
-function compressImage(file, callback) {
-    var reader = new FileReader();
-    reader.onload = function (e) {
-        var img = new Image();
-        img.onload = function () {
-            var maxW = 1200;
-            var maxH = 1200;
-            var w = img.width;
-            var h = img.height;
-            if (w > maxW || h > maxH) {
-                var ratio = Math.min(maxW / w, maxH / h);
-                w = Math.round(w * ratio);
-                h = Math.round(h * ratio);
-            }
-            var canvas = document.createElement('canvas');
-            canvas.width = w;
-            canvas.height = h;
-            var ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, w, h);
-            canvas.toBlob(function (blob) {
-                callback(blob);
-            }, 'image/jpeg', 0.75);
+function compressImage(file) {
+    return new Promise(function (resolve) {
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            var img = new Image();
+            img.onload = function () {
+                var maxW = 1200;
+                var maxH = 1200;
+                var w = img.width;
+                var h = img.height;
+                if (w > maxW || h > maxH) {
+                    var ratio = Math.min(maxW / w, maxH / h);
+                    w = Math.round(w * ratio);
+                    h = Math.round(h * ratio);
+                }
+                var canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+                var ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                var dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+                fetch(dataUrl).then(function (r) { return r.blob(); }).then(function (blob) {
+                    resolve(blob);
+                });
+            };
+            img.src = e.target.result;
         };
-        img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+        reader.readAsDataURL(file);
+    });
 }
 
 function extractStoragePath(url) {
@@ -514,33 +517,32 @@ function setupPhotoUpload() {
         var file = e.target.files[0];
         if (!file) return;
         console.log('[上传] 开始处理图片:', file.name, '大小:', (file.size / 1024).toFixed(1) + 'KB');
-        compressImage(file, async function (blob) {
-            if (!blob) { console.error('[上传] 图片压缩失败'); showAlert('图片处理失败，请重试'); return; }
-            console.log('[上传] 压缩完成, Blob大小:', (blob.size / 1024).toFixed(1) + 'KB');
-            console.log('[上传] 正在上传到Supabase Storage...');
-            var publicUrl = await uploadPhotoToStorage(blob);
-            if (!publicUrl) { console.error('[上传] Storage上传失败'); showAlert('图片上传失败，请检查网络后重试'); return; }
-            console.log('[上传] Storage上传成功, URL:', publicUrl);
-            showDialog('为照片添加信息', [
-                { name: 'desc', type: 'textarea', placeholder: '为这张照片配一段文字...' },
-                { name: 'photoDate', type: 'date', placeholder: '拍摄日期', value: todayStr() }
-            ], async function (r) {
-                console.log('[上传] 正在写入数据库...');
-                var res = await sbInsert('photos', {
-                    url: publicUrl,
-                    description: (r.desc || '').trim(),
-                    upload_time: new Date().toISOString(),
-                    photo_date: r.photoDate || ''
-                });
-                console.log('[上传] 数据库写入结果:', res);
-                if (res && res.length > 0) {
-                    currentData.photos.unshift(mapPhoto(res[0]));
-                    console.log('[上传] ✅ 照片已成功保存到数据库!');
-                } else {
-                    console.error('[上传] ❌ 数据库写入失败! res为:', res);
-                }
-                renderGallery();
+        var blob = await compressImage(file);
+        if (!blob) { console.error('[上传] 图片压缩失败'); showAlert('图片处理失败，请重试'); return; }
+        console.log('[上传] 压缩完成, Blob大小:', (blob.size / 1024).toFixed(1) + 'KB');
+        console.log('[上传] 正在上传到Supabase Storage...');
+        var publicUrl = await uploadPhotoToStorage(blob);
+        if (!publicUrl) { console.error('[上传] Storage上传失败'); showAlert('图片上传失败，请检查网络后重试'); return; }
+        console.log('[上传] Storage上传成功, URL:', publicUrl);
+        showDialog('为照片添加信息', [
+            { name: 'desc', type: 'textarea', placeholder: '为这张照片配一段文字...' },
+            { name: 'photoDate', type: 'date', placeholder: '拍摄日期', value: todayStr() }
+        ], async function (r) {
+            console.log('[上传] 正在写入数据库...');
+            var res = await sbInsert('photos', {
+                url: publicUrl,
+                description: (r.desc || '').trim(),
+                upload_time: new Date().toISOString(),
+                photo_date: r.photoDate || ''
             });
+            console.log('[上传] 数据库写入结果:', res);
+            if (res && res.length > 0) {
+                currentData.photos.unshift(mapPhoto(res[0]));
+                console.log('[上传] ✅ 照片已成功保存到数据库!');
+            } else {
+                console.error('[上传] ❌ 数据库写入失败! res为:', res);
+            }
+            renderGallery();
         });
         e.target.value = '';
     });
