@@ -304,11 +304,23 @@ body {
     margin-bottom: 15px;
 }
 
-.gallery-header, .bucket-header, .timeline-header {
+.gallery-header, .bucket-header, .timeline-header, .map-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 20px 0;
+}
+
+.gallery-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.storage-info {
+    font-size: 11px;
+    color: #A09086;
+    white-space: nowrap;
 }
 
 .bucket-header-actions {

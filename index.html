@@ -96,10 +96,13 @@
             <section id="gallery" class="tab-panel hidden">
                 <div class="gallery-header">
                     <h2 class="section-title">📷 时光相册</h2>
-                    <button class="upload-btn" id="upload-btn" onclick="document.getElementById('photo-upload').click()">
-                        <i class="fas fa-plus"></i>
-                        <span>添加照片</span>
-                    </button>
+                    <div class="gallery-header-right">
+                        <span class="storage-info" id="storage-info"></span>
+                        <button class="upload-btn" id="upload-btn" onclick="document.getElementById('photo-upload').click()">
+                            <i class="fas fa-plus"></i>
+                            <span>添加照片</span>
+                        </button>
+                    </div>
                     <input type="file" id="photo-upload" accept="image/*" style="display:none">
                 </div>
                 <div class="gallery-grid" id="gallery-grid"></div>

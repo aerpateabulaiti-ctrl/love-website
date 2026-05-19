@@ -50,7 +50,59 @@ function loadData() {
 }
 
 function saveData(data) {
-    try { localStorage.setItem('coupleData', JSON.stringify(data)); } catch (e) {}
+    try {
+        localStorage.setItem('coupleData', JSON.stringify(data));
+    } catch (e) {
+        showAlert('⚠️ 存储空间不足！\n请删除一些照片后重试。\n当前已用空间较大，建议清理旧照片。');
+    }
+    updateStorageInfo();
+}
+
+function getStorageUsed() {
+    var total = 0;
+    for (var key in localStorage) {
+        if (localStorage.hasOwnProperty(key)) {
+            total += localStorage[key].length + key.length;
+        }
+    }
+    return total;
+}
+
+function updateStorageInfo() {
+    var el = document.getElementById('storage-info');
+    if (!el) return;
+    var used = getStorageUsed();
+    var kb = Math.round(used / 1024);
+    var limit = 5120; // 5MB in KB
+    var pct = Math.round((used / (limit * 1024)) * 100);
+    el.textContent = '存储: ' + kb + 'KB / 5MB (' + pct + '%)';
+    el.style.color = pct > 80 ? '#E53935' : pct > 50 ? '#E57373' : '#A09086';
+}
+
+function compressImage(file, callback) {
+    var reader = new FileReader();
+    reader.onload = function (e) {
+        var img = new Image();
+        img.onload = function () {
+            var maxW = 1200;
+            var maxH = 1200;
+            var w = img.width;
+            var h = img.height;
+            if (w > maxW || h > maxH) {
+                var ratio = Math.min(maxW / w, maxH / h);
+                w = Math.round(w * ratio);
+                h = Math.round(h * ratio);
+            }
+            var canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            callback(canvas.toDataURL('image/jpeg', 0.75));
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
 }
 
 var currentData = loadData();
@@ -300,15 +352,12 @@ function editPhotoDate(id) {
 }
 
 function setupPhotoUpload() {
-    // upload button onclick is set in HTML
     var fileInput = document.getElementById('photo-upload');
     if (!fileInput) return;
     fileInput.addEventListener('change', function (e) {
         var file = e.target.files[0];
         if (!file) return;
-        var reader = new FileReader();
-        reader.onload = function (ev) {
-            var url = ev.target.result;
+        compressImage(file, function (url) {
             showDialog('照片上传成功 💕', [
                 { name: 'desc', type: 'textarea', placeholder: '为这张照片配一段文字...' },
                 { name: 'photoDate', type: 'date', placeholder: '拍摄日期', value: todayStr() }
@@ -323,8 +372,7 @@ function setupPhotoUpload() {
                 saveData(currentData);
                 renderGallery();
             });
-        };
-        reader.readAsDataURL(file);
+        });
         e.target.value = '';
     });
 }
@@ -603,6 +651,7 @@ function initApp() {
 
     setupDialogs();
     initTabs();
+    updateStorageInfo();
     renderGallery();
     setupPhotoUpload();
     renderBucketList();
