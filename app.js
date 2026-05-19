@@ -513,7 +513,7 @@ async function editPhotoDate(id) {
 function setupPhotoUpload() {
     var fileInput = document.getElementById('photo-upload');
     if (!fileInput) return;
-    fileInput.addEventListener('change', function (e) {
+    fileInput.addEventListener('change', async function (e) {
         var file = e.target.files[0];
         if (!file) return;
         console.log('[上传] 开始处理图片:', file.name, '大小:', (file.size / 1024).toFixed(1) + 'KB');
