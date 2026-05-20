@@ -186,6 +186,19 @@ function showAlert(msg) {
 var STORAGE_URL = 'https://okpcwsianqkouitdwhvx.supabase.co/storage/v1/object/photos/';
 var STORAGE_PUBLIC_URL = 'https://okpcwsianqkouitdwhvx.supabase.co/storage/v1/object/public/photos/';
 
+// 为移动端生成缩略图URL（如果Supabase图片转换已启用）
+var _renderSupported = null;
+function getPhotoUrl(url, width) {
+    if (_renderSupported === false || !url || url.indexOf(STORAGE_PUBLIC_URL) !== 0) return url;
+    var base = url.replace('/object/public/', '/render/image/public/');
+    return base + '?width=' + width + '&quality=75&format=webp';
+}
+
+// 判断是否为移动端
+function isMobile() {
+    return window.innerWidth < 768;
+}
+
 function compressImage(file) {
     return new Promise(function (resolve) {
         var reader = new FileReader();
@@ -209,25 +222,27 @@ function compressImage(file) {
                     canvas.height = h;
                     var ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, w, h);
-                    var dataUrl = canvas.toDataURL('image/jpeg', 0.75);
-                    fetch(dataUrl).then(function (r) { return r.blob(); }).then(function (blob) {
+                    // 优先使用WebP格式（体积比JPEG小30%+）
+                    var mimeType = 'image/webp';
+                    var testData = canvas.toDataURL('image/webp', 0.01);
+                    var supportsWebP = testData.indexOf('image/webp') === 0;
+                    if (!supportsWebP) mimeType = 'image/jpeg';
+                    var quality = supportsWebP ? 0.7 : 0.7;
+                    canvas.toBlob(function (blob) {
                         if (!blob || blob.size === 0) {
                             console.error('[压缩] Blob为空');
                             resolve(null);
                         } else {
                             if (blob.size > 3 * 1024 * 1024) {
-                                console.warn('[压缩] Blob超过3MB, 重新用更高质量压缩');
+                                console.warn('[压缩] Blob超过3MB, 用更低质量重新压缩');
                                 canvas.toBlob(function (b2) {
                                     resolve(b2 && b2.size > 0 ? b2 : null);
-                                }, 'image/jpeg', 0.5);
+                                }, mimeType, 0.45);
                             } else {
                                 resolve(blob);
                             }
                         }
-                    }).catch(function (err) {
-                        console.error('[压缩] fetch转换失败:', err.message);
-                        resolve(null);
-                    });
+                    }, mimeType, quality);
                 } catch (err) {
                     console.error('[压缩] Canvas处理异常:', err.message);
                     resolve(null);
@@ -245,15 +260,18 @@ function extractStoragePath(url) {
 }
 
 async function uploadPhotoToStorage(blob) {
-    var filename = Date.now() + '-' + Math.random().toString(36).substr(2, 9) + '.jpg';
+    var isWebP = blob.type === 'image/webp';
+    var ext = isWebP ? '.webp' : '.jpg';
+    var mime = isWebP ? 'image/webp' : 'image/jpeg';
+    var filename = Date.now() + '-' + Math.random().toString(36).substr(2, 9) + ext;
     try {
         var res = await fetch(STORAGE_URL + filename, {
             method: 'POST',
             headers: {
                 'apikey': SB_KEY,
                 'Authorization': 'Bearer ' + SB_KEY,
-                'Content-Type': 'image/jpeg',
-                'Cache-Control': 'max-age=3600'
+                'Content-Type': mime,
+                'Cache-Control': 'max-age=31536000, immutable'
             },
             body: blob
         });
@@ -482,9 +500,11 @@ function renderGallery() {
             ? '<p class="photo-desc-text" onclick="editPhotoDesc(' + p.id + ')">' + p.desc.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>'
             : '<p class="photo-desc-text photo-desc-empty" onclick="editPhotoDesc(' + p.id + ')">点击添加配文...</p>';
 
+        var thumbUrl = isMobile() ? getPhotoUrl(p.url, 400) : getPhotoUrl(p.url, 600);
         html += '<div class="photo-card">' +
             '<button class="photo-delete-btn" onclick="deletePhoto(' + p.id + ')" title="删除">🗑️</button>' +
-            '<img src="' + p.url + '" alt="" class="photo-image" loading="lazy">' +
+            '<img src="' + thumbUrl + '" data-full="' + p.url + '" alt="" class="photo-image" loading="lazy" decoding="async" width="400" height="250"' +
+            ' onerror="window._renderSupported=false;this.src=this.dataset.full">' +
             '<div class="photo-info">' +
                 descHtml +
                 '<div class="photo-meta">' + uploadTime + photoDate + '</div>' +
@@ -492,6 +512,20 @@ function renderGallery() {
         '</div>';
     });
     grid.innerHTML = html;
+    // 图片加载完成后淡入
+    var imgs = grid.querySelectorAll('.photo-image');
+    [].forEach.call(imgs, function (img) {
+        if (img.complete) {
+            img.classList.add('loaded');
+        } else {
+            img.addEventListener('load', function () {
+                img.classList.add('loaded');
+            });
+            img.addEventListener('error', function () {
+                img.classList.add('loaded');
+            });
+        }
+    });
 }
 
 async function deletePhoto(id) {
