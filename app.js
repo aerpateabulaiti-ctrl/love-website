@@ -189,27 +189,49 @@ var STORAGE_PUBLIC_URL = 'https://okpcwsianqkouitdwhvx.supabase.co/storage/v1/ob
 function compressImage(file) {
     return new Promise(function (resolve) {
         var reader = new FileReader();
+        reader.onerror = function () { console.error('[压缩] FileReader读取失败'); resolve(null); };
         reader.onload = function (e) {
             var img = new Image();
+            img.onerror = function () { console.error('[压缩] 图片加载失败'); resolve(null); };
             img.onload = function () {
-                var maxW = 1200;
-                var maxH = 1200;
-                var w = img.width;
-                var h = img.height;
-                if (w > maxW || h > maxH) {
-                    var ratio = Math.min(maxW / w, maxH / h);
-                    w = Math.round(w * ratio);
-                    h = Math.round(h * ratio);
+                try {
+                    var maxW = 1200;
+                    var maxH = 1200;
+                    var w = img.width;
+                    var h = img.height;
+                    if (w > maxW || h > maxH) {
+                        var ratio = Math.min(maxW / w, maxH / h);
+                        w = Math.round(w * ratio);
+                        h = Math.round(h * ratio);
+                    }
+                    var canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    var ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    var dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+                    fetch(dataUrl).then(function (r) { return r.blob(); }).then(function (blob) {
+                        if (!blob || blob.size === 0) {
+                            console.error('[压缩] Blob为空');
+                            resolve(null);
+                        } else {
+                            if (blob.size > 3 * 1024 * 1024) {
+                                console.warn('[压缩] Blob超过3MB, 重新用更高质量压缩');
+                                canvas.toBlob(function (b2) {
+                                    resolve(b2 && b2.size > 0 ? b2 : null);
+                                }, 'image/jpeg', 0.5);
+                            } else {
+                                resolve(blob);
+                            }
+                        }
+                    }).catch(function (err) {
+                        console.error('[压缩] fetch转换失败:', err.message);
+                        resolve(null);
+                    });
+                } catch (err) {
+                    console.error('[压缩] Canvas处理异常:', err.message);
+                    resolve(null);
                 }
-                var canvas = document.createElement('canvas');
-                canvas.width = w;
-                canvas.height = h;
-                var ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, w, h);
-                var dataUrl = canvas.toDataURL('image/jpeg', 0.75);
-                fetch(dataUrl).then(function (r) { return r.blob(); }).then(function (blob) {
-                    resolve(blob);
-                });
             };
             img.src = e.target.result;
         };
