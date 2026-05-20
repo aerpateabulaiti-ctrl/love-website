@@ -186,19 +186,6 @@ function showAlert(msg) {
 var STORAGE_URL = 'https://okpcwsianqkouitdwhvx.supabase.co/storage/v1/object/photos/';
 var STORAGE_PUBLIC_URL = 'https://okpcwsianqkouitdwhvx.supabase.co/storage/v1/object/public/photos/';
 
-// 为移动端生成缩略图URL（如果Supabase图片转换已启用）
-var _renderSupported = null;
-function getPhotoUrl(url, width) {
-    if (_renderSupported === false || !url || url.indexOf(STORAGE_PUBLIC_URL) !== 0) return url;
-    var base = url.replace('/object/public/', '/render/image/public/');
-    return base + '?width=' + width + '&quality=75&format=webp';
-}
-
-// 判断是否为移动端
-function isMobile() {
-    return window.innerWidth < 768;
-}
-
 function compressImage(file) {
     return new Promise(function (resolve) {
         var reader = new FileReader();
@@ -500,11 +487,9 @@ function renderGallery() {
             ? '<p class="photo-desc-text" onclick="editPhotoDesc(' + p.id + ')">' + p.desc.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>'
             : '<p class="photo-desc-text photo-desc-empty" onclick="editPhotoDesc(' + p.id + ')">点击添加配文...</p>';
 
-        var thumbUrl = isMobile() ? getPhotoUrl(p.url, 400) : getPhotoUrl(p.url, 600);
         html += '<div class="photo-card">' +
             '<button class="photo-delete-btn" onclick="deletePhoto(' + p.id + ')" title="删除">🗑️</button>' +
-            '<img src="' + thumbUrl + '" data-full="' + p.url + '" alt="" class="photo-image" loading="lazy" decoding="async" width="400" height="250"' +
-            ' onerror="window._renderSupported=false;this.src=this.dataset.full">' +
+            '<img src="' + p.url + '" alt="" class="photo-image" loading="lazy" decoding="async">' +
             '<div class="photo-info">' +
                 descHtml +
                 '<div class="photo-meta">' + uploadTime + photoDate + '</div>' +
@@ -512,20 +497,6 @@ function renderGallery() {
         '</div>';
     });
     grid.innerHTML = html;
-    // 图片加载完成后淡入
-    var imgs = grid.querySelectorAll('.photo-image');
-    [].forEach.call(imgs, function (img) {
-        if (img.complete) {
-            img.classList.add('loaded');
-        } else {
-            img.addEventListener('load', function () {
-                img.classList.add('loaded');
-            });
-            img.addEventListener('error', function () {
-                img.classList.add('loaded');
-            });
-        }
-    });
 }
 
 async function deletePhoto(id) {
