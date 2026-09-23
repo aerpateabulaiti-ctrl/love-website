@@ -557,7 +557,7 @@ function renderGallery() {
             lastMonth = month;
         }
         html += '<article class="photo-card" data-photo-id="' + photo.id + '">' +
-            '<button class="photo-delete-btn" onclick="deletePhoto(' + photo.id + ')" aria-label="删除照片">×</button>' +
+            '<button class="photo-delete-btn" onclick="deletePhoto(' + photo.id + ')" aria-label="删除照片"><svg class="close-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M6 6L18 18M18 6L6 18"/></svg></button>' +
             '<button class="photo-open" onclick="openPhoto(' + photo.id + ')" aria-label="查看照片原图">' +
             '<img data-src="' + escapeHtml(photoDeliveryUrl(thumbnailUrl(photo.url))) + '" data-original="' + escapeHtml(photoDeliveryUrl(photo.url)) + '" alt="' + escapeHtml(photo.desc || '我们的照片') + '" class="photo-image"' + (extractStoragePath(photo.url) ? ' crossorigin="anonymous"' : '') + ' decoding="async" width="640" height="800"></button>' +
             '<div class="photo-info"><p class="photo-desc-text ' + (photo.desc ? '' : 'photo-desc-empty') + '" role="button" tabindex="0" onclick="editPhotoDesc(' + photo.id + ')" onkeydown="if(event.key===\'Enter\')editPhotoDesc(' + photo.id + ')">' + escapeHtml(photo.desc || '为这一刻写点什么…') + '</p>' +

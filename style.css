@@ -738,6 +738,31 @@ a {
     font-size:30px;
 }
 
+.dialog-close,.viewer-close,.photo-delete-btn {
+    display:grid;
+    place-items:center;
+    padding:0;
+    line-height:1;
+    flex-shrink:0;
+}
+
+.close-icon {
+    display:block;
+    width:18px;
+    height:18px;
+    pointer-events:none;
+}
+
+.viewer-close .close-icon {
+    width:20px;
+    height:20px;
+}
+
+.photo-delete-btn .close-icon {
+    width:14px;
+    height:14px;
+}
+
 .viewer-close {
     right:22px;
     top:20px;
