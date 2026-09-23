@@ -745,6 +745,15 @@ a {
 
 .viewer-nav {
     top:48%;
+    padding:0;
+    line-height:1;
+}
+
+.viewer-nav svg {
+    display:block;
+    width:20px;
+    height:20px;
+    pointer-events:none;
 }
 
 .viewer-prev {
