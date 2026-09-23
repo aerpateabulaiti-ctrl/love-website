@@ -324,14 +324,6 @@ a {
     transform:rotate(-22deg);
 }
 
-.hero-flower {
-    position:absolute;
-    right:18px;
-    top:13px;
-    color:#bec2ab;
-    font-size:74px;
-    line-height:1;
-}
 
 .timer-container {
     display:flex;
@@ -1442,11 +1434,11 @@ textarea.dialog-field {
         font-size:14px;
     }
     .main-content {
-        padding:0 19px 100px;
+        padding:0 16px calc(96px + env(safe-area-inset-bottom));
     }
     .header {
-        padding:24px 0 19px;
-        align-items:flex-start;
+        padding:18px 0 16px;
+        align-items:center;
     }
     .brand-mark {
         width:35px;
@@ -1458,22 +1450,11 @@ textarea.dialog-field {
         gap:10px;
     }
     .site-title {
-        font-size:20px;
-        letter-spacing:1px;
+        font-size:19px;
+        letter-spacing:.5px;
     }
-    .brand .eyebrow {
-        font-size:8px;
-        letter-spacing:2px;
-    }
-    .header-note {
-        font-size:9px;
-        max-width:107px;
-        padding-top:7px;
-        align-items:flex-start;
-        line-height:1.8;
-    }
-    .status-dot {
-        margin-top:5px;
+    .brand .eyebrow,.header-note {
+        display:none;
     }
     .tab-nav {
         position:fixed;
@@ -1504,132 +1485,127 @@ textarea.dialog-field {
         font-size:27px;
     }
     .content {
-        padding-top:16px;
+        padding-top:0;
     }
     .home-intro {
-        margin-bottom:13px;
-    }
-    .home-intro .eyebrow {
-        font-size:8px;
-        letter-spacing:2px;
-    }
-    .tiny-note {
-        font-size:11px;
+        display:none;
     }
     .hero-card {
-        padding:27px 25px;
-        min-height:465px;
-        align-items:flex-start;
+        display:grid;
+        grid-template-columns:minmax(0,1fr) 88px;
+        gap:8px 12px;
+        padding:20px;
+        min-height:0;
         border-radius:18px;
+        align-items:center;
+    }
+    .hero-copy {
+        display:contents;
     }
     .hero-copy h2 {
-        font-size:30px;
-        margin-top:15px;
+        grid-column:1 / -1;
+        font-size:clamp(22px,6vw,27px);
+        line-height:1.5;
+        letter-spacing:.5px;
+        margin:0;
     }
-    .hero-copy p {
-        font-size:11px;
-        line-height:1.9;
+    .hero-kicker,.hero-copy p {
+        display:none;
     }
-    .hero-kicker {
-        font-size:10px;
-        letter-spacing:1px;
+    .hero-card .text-link {
+        grid-column:1;
+        grid-row:2;
+        justify-self:start;
+        margin:0;
+        min-height:44px;
+        font-size:12px;
+        letter-spacing:0;
     }
-    .text-link {
-        font-size:11px;
-        margin-top:18px;
+    .hero-card .text-link span {
+        margin-left:12px;
     }
     .hero-keepsake {
-        position:absolute;
-        right:27px;
-        bottom:21px;
-        width:138px;
-        padding:8px 8px 9px;
-        transform:rotate(7deg);
+        grid-column:2;
+        grid-row:2;
+        position:relative;
+        right:auto;
+        bottom:auto;
+        width:88px;
+        margin:0;
+        padding:0;
+        transform:none;
+        background:transparent;
+        box-shadow:none;
     }
     .hero-keepsake img {
-        height:131px;
+        display:block;
+        width:88px;
+        height:88px;
     }
-    .paper-tape {
-        height:19px;
-        width:55px;
-        left:calc(50% - 27px);
-        top:-10px;
-    }
-    .handwritten {
-        font-size:12px;
-    }
-    .doodle-heart {
-        font-size:44px;
-        right:-18px;
-        bottom:0;
-    }
-    .hero-flower {
-        font-size:43px;
-        top:auto;
-        bottom:48px;
-        left:35px;
-        right:auto;
+    .hero-keepsake .paper-tape,.hero-keepsake .handwritten,.hero-keepsake .doodle-heart {
+        display:none;
     }
     .timer-container {
         display:block;
-        padding:23px 21px;
-        margin-top:17px;
-        border-radius:15px;
+        padding:18px 20px;
+        margin-top:12px;
+        border-radius:16px;
     }
     .timer-caption {
-        position:relative;
+        display:flex;
+        flex-wrap:wrap;
+        align-items:baseline;
+        justify-content:space-between;
+        gap:2px 10px;
     }
     .timer-caption .eyebrow {
-        font-size:8px;
-        letter-spacing:2px;
+        display:none;
     }
     .timer-caption h3 {
-        font-size:18px;
-        margin-top:5px;
+        font-size:16px;
+        margin:0;
     }
     .timer-caption p {
-        position:absolute;
-        right:0;
-        bottom:3px;
-        font-size:9px;
+        position:static;
+        font-size:10px;
     }
     .timer-display {
-        justify-content:space-between;
-        gap:6px;
-        margin-top:17px;
+        display:grid;
+        grid-template-columns:minmax(0,1.25fr) auto minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr);
+        gap:4px;
+        margin-top:12px;
     }
     .timer-value {
-        font-size:34px;
+        font-size:clamp(26px,8vw,34px);
     }
     .timer-label {
-        font-size:9px;
-        margin-top:2px;
+        font-size:10px;
+        margin-top:1px;
     }
     .timer-item {
-        min-width:37px;
+        min-width:0;
     }
     .timer-separator {
         font-size:17px;
+        padding-bottom:16px;
     }
     .home-collections {
         gap:8px;
-        margin-top:15px;
+        margin-top:12px;
     }
     .collection-card {
-        padding:15px 11px;
+        padding:13px 10px;
         display:flex;
         flex-direction:column;
         gap:4px;
         border-radius:12px;
     }
-    .collection-icon {
-        font-size:23px;
-        align-self:flex-start;
-        margin-bottom:7px;
+    .collection-icon,.collection-arrow {
+        display:none;
     }
     .collection-label {
-        font-size:9px;
-        white-space:nowrap;
+        font-size:10px;
+        white-space:normal;
     }
     .collection-card strong {
         font-size:22px;
