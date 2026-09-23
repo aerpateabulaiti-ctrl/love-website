@@ -4,17 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>我们的专属小屋</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="theme-color" content="#f6f2e9">
+    <meta name="description" content="把平凡的日子，收藏成我们的故事。">
+    <link rel="stylesheet" href="style.css?v=20260923">
     <link rel="dns-prefetch" href="https://okpcwsianqkouitdwhvx.supabase.co">
     <link rel="preconnect" href="https://okpcwsianqkouitdwhvx.supabase.co" crossorigin>
 </head>
 <body>
     <div id="auth-screen" class="auth-screen">
         <div class="auth-container">
-            <div class="auth-icon">💕</div>
+            <div class="eyebrow">A LITTLE PLACE FOR US</div><img class="auth-couple" src="Q版形象设计/7F974D9CE7BD372F3D2BBD7C9D294E5B.jpg" alt="我们的 Q 版形象" width="180" height="180">
             <h1 class="auth-title">我们的专属小屋</h1>
-            <p class="auth-subtitle">请输入专属密码进入</p>
-            <input type="password" id="password-input" placeholder="输入密码" maxlength="8">
+            <p class="auth-subtitle">把平凡的日子，收藏成我们的故事。</p>
+            <input type="password" id="password-input" placeholder="输入我们的专属密码" autocomplete="current-password" aria-label="专属密码" maxlength="8">
             <button id="auth-btn" class="auth-btn">进入小屋</button>
             <p class="auth-error" id="auth-error"></p>
         </div>
@@ -22,12 +24,17 @@
 
     <div id="main-content" class="main-content hidden">
         <header class="header">
-            <h1 class="site-title">我们的专属小屋</h1>
-            <p class="greeting" id="greeting"></p>
+            <div class="brand"><span class="brand-mark" aria-hidden="true">♡</span><div><div class="eyebrow">OUR LITTLE WORLD</div><h1 class="site-title">我们的专属小屋</h1></div></div>
+            <div class="header-note"><span class="status-dot"></span><p class="greeting" id="greeting"></p></div>
         </header>
 
-        <nav class="tab-nav">
-            <button class="tab-btn active" data-tab="timemachine">
+        <div id="data-status" class="data-status hidden" role="status" aria-live="polite">
+            <span id="data-status-message"></span>
+            <button id="data-retry" type="button">重试连接</button>
+        </div>
+
+        <nav class="tab-nav" aria-label="小屋导航">
+            <button class="tab-btn active" data-tab="timemachine" aria-current="page">
                 <div class="tab-icon">
                     <img src="Q版形象设计/7F974D9CE7BD372F3D2BBD7C9D294E5B.jpg" alt="时光机" width="36" height="36" decoding="async">
                 </div>
@@ -61,42 +68,29 @@
 
         <main class="content">
             <section id="timemachine" class="tab-panel active">
-                <div class="characters-greeting">
-                    <p>我们的恋爱故事正在继续...</p>
+                <div class="home-intro"><span class="eyebrow">THE DAYS WITH YOU</span><span class="tiny-note">日子很慢，爱很长。</span></div>
+                <div class="hero-card">
+                    <div class="hero-copy"><div class="hero-kicker"><span></span> 两个人的小小宇宙</div><h2>把每一个今天，<br>写进<span>我们的故事。</span></h2><p>一起走过的路，认真记住的瞬间，<br>还有好多好多，想和你一起做的小事。</p><button class="text-link" data-jump="gallery">翻开我们的相册 <span>↗</span></button></div>
+                    <div class="hero-keepsake"><span class="paper-tape"></span><img src="Q版形象设计/531EC49C3EF3957D4D2DCE6913A62E73.jpg" alt="我们俩的亲吻 Q 版画像" width="260" height="280"><span class="handwritten">you &amp; me, always.</span><span class="doodle-heart" aria-hidden="true">♡</span></div>
+                    <span class="hero-flower" aria-hidden="true">✳</span>
                 </div>
-                <div class="timer-container">
-                    <div class="timer-title">我们已经相爱了</div>
-                    <div class="timer-display">
-                        <div class="timer-item">
-                            <span class="timer-value" id="days">0</span>
-                            <span class="timer-label">天</span>
-                        </div>
-                        <div class="timer-separator">:</div>
-                        <div class="timer-item">
-                            <span class="timer-value" id="hours">0</span>
-                            <span class="timer-label">时</span>
-                        </div>
-                        <div class="timer-separator">:</div>
-                        <div class="timer-item">
-                            <span class="timer-value" id="minutes">0</span>
-                            <span class="timer-label">分</span>
-                        </div>
-                        <div class="timer-separator">:</div>
-                        <div class="timer-item">
-                            <span class="timer-value" id="seconds">0</span>
-                            <span class="timer-label">秒</span>
-                        </div>
-                    </div>
-                    <div class="timer-date">恋爱纪念日：2026年5月20日</div>
+                <div class="timer-container"><div class="timer-caption"><span class="eyebrow">EVERY SECOND COUNTS</span><h3>我们已经相爱了</h3><p>从 2026 年 5 月 20 日开始</p></div><div class="timer-display">
+                    <div class="timer-item"><span class="timer-value" id="days">0</span><span class="timer-label">天</span></div><div class="timer-separator">:</div>
+                    <div class="timer-item"><span class="timer-value" id="hours">0</span><span class="timer-label">时</span></div><div class="timer-separator">:</div>
+                    <div class="timer-item"><span class="timer-value" id="minutes">0</span><span class="timer-label">分</span></div><div class="timer-separator">:</div>
+                    <div class="timer-item"><span class="timer-value" id="seconds">0</span><span class="timer-label">秒</span></div>
+                </div></div>
+                <div class="home-collections">
+                    <button data-jump="gallery" class="collection-card"><span class="collection-icon">▧</span><span class="collection-label">被珍藏的瞬间</span><strong><span id="home-photo-count">—</span><small> 张照片</small></strong><span class="collection-arrow">↗</span></button>
+                    <button data-jump="bucketlist" class="collection-card"><span class="collection-icon">♡</span><span class="collection-label">一起完成的小事</span><strong><span id="home-wish-count">—</span><small> 个愿望</small></strong><span class="collection-arrow">↗</span></button>
+                    <button data-jump="map" class="collection-card"><span class="collection-icon">⌁</span><span class="collection-label">并肩走过的地方</span><strong><span id="home-place-count">—</span><small> 处足迹</small></strong><span class="collection-arrow">↗</span></button>
                 </div>
-                <div class="love-quote">
-                    <p>"最好的爱是陪伴，最长情的告白是相守"</p>
-                </div>
+                <div class="love-quote"><span>♡</span><p>不必每一天都特别，有你就值得纪念。</p></div>
             </section>
 
             <section id="gallery" class="tab-panel hidden">
                 <div class="gallery-header">
-                    <h2 class="section-title">📷 时光相册</h2>
+                    <div><div class="eyebrow">MOMENTS WE KEEP</div><h2 class="section-title">时光相册<span class="title-dot">.</span></h2><p class="section-description">按快门的那一天，值得被好好记住。</p></div>
                     <div class="gallery-header-right">
                         <button class="upload-btn" id="upload-btn" onclick="document.getElementById('photo-upload').click()">
                             ➕
@@ -105,12 +99,14 @@
                     </div>
                     <input type="file" id="photo-upload" accept="image/*" style="display:none">
                 </div>
+                <div class="album-toolbar"><span id="photo-count">正在读取回忆…</span><label>拍摄日期 <select id="photo-sort" aria-label="按拍摄日期排序"><option value="desc">最近的在前</option><option value="asc">最早的在前</option></select></label></div>
+                <p id="upload-status" class="upload-status hidden" role="status"></p>
                 <div class="gallery-grid" id="gallery-grid"></div>
             </section>
 
             <section id="bucketlist" class="tab-panel hidden">
                 <div class="bucket-header">
-                    <h2 class="section-title">📝 100件小事</h2>
+                    <div><div class="eyebrow">OUR LITTLE WISHES</div><h2 class="section-title">一起做的小事<span class="title-dot">.</span></h2><p class="section-description">把“有一天”，变成“我们做到了”。</p></div>
                     <div class="bucket-header-actions">
                         <span class="bucket-progress">已完成 <span id="completed-count">0</span>/<span id="total-count">0</span></span>
                         <button class="add-bucket-btn" id="add-bucket-btn" onclick="addBucket()">
@@ -127,7 +123,7 @@
 
             <section id="timeline" class="tab-panel hidden">
                 <div class="timeline-header">
-                    <h2 class="section-title">🎞️ 恋爱时间轴</h2>
+                    <div><div class="eyebrow">CHAPTERS OF US</div><h2 class="section-title">恋爱时间轴<span class="title-dot">.</span></h2><p class="section-description">每一个重要的日子，都是故事的新一页。</p></div>
                     <button class="add-event-btn" id="add-event-btn" onclick="addTimelineEvent()">
                         ➕
                         <span>添加事件</span>
@@ -138,73 +134,22 @@
 
             <section id="map" class="tab-panel hidden">
                 <div class="map-header">
-                    <h2 class="section-title">🗺️ 足迹地图</h2>
+                    <div><div class="eyebrow">PLACES WITH YOU</div><h2 class="section-title">一起走过的世界<span class="title-dot">.</span></h2><p class="section-description">点亮一个地方，收藏一段并肩的旅程。</p></div>
                     <span class="map-stats">已点亮 <span id="map-count">0</span> 个省份</span>
                 </div>
                 <div class="map-card">
-                    <div class="map-visual">
-                        <div class="map-grid">
-                            <div class="grid-row">
-                                <div class="grid-cell" data-provinces="黑龙江">黑龙江</div>
-                                <div class="grid-cell" data-provinces="吉林">吉林</div>
-                                <div class="grid-cell" data-provinces="辽宁">辽宁</div>
-                                <div class="grid-cell empty"></div>
-                                <div class="grid-cell empty"></div>
-                                <div class="grid-cell empty"></div>
-                            </div>
-                            <div class="grid-row">
-                                <div class="grid-cell" data-provinces="内蒙古">内蒙古</div>
-                                <div class="grid-cell" data-provinces="河北,北京,天津">京津冀</div>
-                                <div class="grid-cell" data-provinces="山西">山西</div>
-                                <div class="grid-cell" data-provinces="山东">山东</div>
-                                <div class="grid-cell" data-provinces="江苏,上海">江浙沪</div>
-                                <div class="grid-cell empty"></div>
-                            </div>
-                            <div class="grid-row">
-                                <div class="grid-cell" data-provinces="新疆">新疆</div>
-                                <div class="grid-cell" data-provinces="甘肃,宁夏">甘宁</div>
-                                <div class="grid-cell" data-provinces="陕西">陕西</div>
-                                <div class="grid-cell" data-provinces="河南">河南</div>
-                                <div class="grid-cell" data-provinces="安徽">安徽</div>
-                                <div class="grid-cell" data-provinces="浙江,上海">浙江/上海</div>
-                            </div>
-                            <div class="grid-row">
-                                <div class="grid-cell" data-provinces="西藏">西藏</div>
-                                <div class="grid-cell" data-provinces="青海">青海</div>
-                                <div class="grid-cell" data-provinces="四川,重庆">川渝</div>
-                                <div class="grid-cell" data-provinces="湖北">湖北</div>
-                                <div class="grid-cell" data-provinces="江西,福建">赣闽</div>
-                                <div class="grid-cell empty"></div>
-                            </div>
-                            <div class="grid-row">
-                                <div class="grid-cell empty"></div>
-                                <div class="grid-cell" data-provinces="云南">云南</div>
-                                <div class="grid-cell" data-provinces="贵州">贵州</div>
-                                <div class="grid-cell" data-provinces="湖南">湖南</div>
-                                <div class="grid-cell" data-provinces="广东,香港,澳门">广东/港澳</div>
-                                <div class="grid-cell" data-provinces="广西">广西</div>
-                            </div>
-                            <div class="grid-row">
-                                <div class="grid-cell empty"></div>
-                                <div class="grid-cell empty"></div>
-                                <div class="grid-cell empty"></div>
-                                <div class="grid-cell empty"></div>
-                                <div class="grid-cell" data-provinces="海南">海南</div>
-                                <div class="grid-cell" data-provinces="台湾">台湾</div>
-                            </div>
-                        </div>
-                    </div>
+                    <div class="map-card-top"><span>我们的旅行足迹</span><div class="map-legend"><span><i></i> 还想一起去</span><span><i class="visited"></i> 已经一起去过</span></div></div>
+                    <div id="china-map" class="china-map" aria-label="中国旅行足迹地图"><p class="map-loading">正在展开地图…</p></div>
+                    <div class="map-bottom"><span id="map-hint" role="status">点击地图上的省份，记录旅行日期</span><div class="map-tools"><button id="map-zoom-out" aria-label="缩小地图">−</button><button id="map-reset" aria-label="还原地图">复位</button><button id="map-zoom-in" aria-label="放大地图">＋</button></div></div>
                 </div>
-                <div class="province-section">
-                    <h3>选择省份点亮</h3>
-                    <div class="province-grid" id="province-grid"></div>
-                </div>
+                <details class="province-section"><summary>按名称选择省份 <span>展开列表，方便选择小区域</span></summary><div class="province-grid" id="province-grid"></div></details>
                 <div class="visited-section">
-                    <h3>已点亮的省份</h3>
+                    <h3>留下的旅行印记 <span class="muted">OUR FOOTPRINTS</span></h3>
                     <ul id="visited-provinces"></ul>
                 </div>
             </section>
         </main>
+        <footer class="site-footer">MADE OF LITTLE MOMENTS <span>♡</span> 只属于我们</footer>
     </div>
 
     <!-- 自定义弹窗 -->
@@ -239,6 +184,12 @@
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <dialog id="photo-viewer" class="photo-viewer" aria-label="查看照片原图">
+        <button id="viewer-close" class="viewer-close" aria-label="关闭照片">×</button>
+        <button id="viewer-prev" class="viewer-nav viewer-prev" aria-label="上一张照片">‹</button>
+        <figure><img id="viewer-image" alt=""><figcaption id="viewer-caption"></figcaption><p id="viewer-status" role="status"></p></figure>
+        <button id="viewer-next" class="viewer-nav viewer-next" aria-label="下一张照片">›</button>
+    </dialog>
+    <script src="app.js?v=20260923" defer></script>
 </body>
 </html>

@@ -1,0 +1,28 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/db/photos",
+      "destination": "https://okpcwsianqkouitdwhvx.supabase.co/rest/v1/photos"
+    },
+    {
+      "source": "/api/db/bucket_list",
+      "destination": "https://okpcwsianqkouitdwhvx.supabase.co/rest/v1/bucket_list"
+    },
+    {
+      "source": "/api/db/timeline",
+      "destination": "https://okpcwsianqkouitdwhvx.supabase.co/rest/v1/timeline"
+    },
+    {
+      "source": "/api/db/visited_provinces",
+      "destination": "https://okpcwsianqkouitdwhvx.supabase.co/rest/v1/visited_provinces"
+    },
+    {
+      "source": "/api/storage/:path*",
+      "destination": "https://okpcwsianqkouitdwhvx.supabase.co/storage/v1/object/photos/:path*"
+    },
+    {
+      "source": "/media/photos/:path*",
+      "destination": "https://okpcwsianqkouitdwhvx.supabase.co/storage/v1/object/public/photos/:path*"
+    }
+  ]
+}
